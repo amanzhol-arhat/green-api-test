@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREEN-API Test Task</title>
+    <style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif; 
+        background-color: #ffffff;
+        padding: 40px;
+        margin: 0;
+        color: #333;
+    }
+
+    .container {
+        display: flex;         
+        flex-direction: row;
+        gap: 60px;             
+        max-width: 1200px;
+        margin: 0 auto;       
+        align-items: flex-start;
+    }
+
+    .controls {
+        flex: 0 0 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;          
+    }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;            
+    
+    input, textarea {
+        width: 100%;
+        padding: 12px 15px;     
+        border: 1px solid #aaa; 
+        border-radius: 6px;    
+        font-size: 14px;
+        outline: none;
+    }
+
+    input:focus, textarea:focus {
+        border-color: #333;    
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background-color: #fff;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        cursor: pointer;
+        text-transform: none;
+        font-size: 14px;
+        color: #333;
+        transition: 0.2s;    
+        font-weight: 500;
+    }
+
+    button:hover {
+        background-color: #f2f2f2;
+        border-color: #888;
+    }
+
+
+    .response-wrapper {
+        flex: 1;              
+        display: flex;
+        flex-direction: column;
+    }
+
+    .response-label {
+        margin-bottom: 10px;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: cursive;
+        color: #444;
+    }
+
+    textarea#response {
+        height: 700px;
+        border: 1px solid #333;
+        border-radius: 4px;
+        padding: 15px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 13px;
+        color: #333;
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="controls">
+        
+        <div class="input-group">
+            <input type="text" id="idInstance" placeholder="idInstance">
+            <input type="text" id="apiTokenInstance" placeholder="ApiTokenInstance">
+        </div>
+
+        <div class="input-group">
+            <button onclick="getSettings()">getSettings</button>
+            <button onclick="getStateInstance()">getStateInstance</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="chatIdMessage" placeholder="77771234567@c.us">
+            <input type="text" id="message" placeholder="Hello World!">
+            <button onclick="sendMessage()">sendMessage</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="chatIdFile" placeholder="77771234567@c.us">
+            <input type="text" id="urlFile" placeholder="https://my.site.com/img/horse.png">
+            <button onclick="sendFileByUrl()">sendFileByUrl</button>
+        </div>
+
+    </div>
+
+    <div class="response-wrapper">
+        <div class="response-label">Ответ:</div>
+        <textarea id="response" readonly></textarea>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = 'https://7103.api.greenapi.com';
+
+    function getCredentials() {
+        const idInstance = document.getElementById('idInstance').value.trim();
+        const apiTokenInstance = document.getElementById('apiTokenInstance').value.trim();
+        
+        if (!idInstance || !apiTokenInstance) {
+            alert('Сначала заполните idInstance и ApiTokenInstance');
+            return null;
+        }
+        return { idInstance, apiTokenInstance };
+    }
+
+    function displayResponse(data) {
+        document.getElementById('response').value = JSON.stringify(data, null, 4);
+    }
+
+    async function getSettings() {
+        const creds = getCredentials();
+        if (!creds) return;
+
+        const url = `${API_URL}/waInstance${creds.idInstance}/getSettings/${creds.apiTokenInstance}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            displayResponse(data);
+        } catch (err) {
+            displayResponse({ error: err.message });
+        }
+    }
+
+    async function getStateInstance() {
+        const creds = getCredentials();
+        if (!creds) return;
+        const url = `${API_URL}/waInstance${creds.idInstance}/getStateInstance/${creds.apiTokenInstance}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            displayResponse(data);
+        } catch (err) {
+            displayResponse({ error: err.message });
+        }
+    }
+
+    async function sendMessage() {
+        const creds = getCredentials();
+        if (!creds) return;
+
+        const chatId = document.getElementById('chatIdMessage').value.trim();
+        const message = document.getElementById('message').value;
+
+        if (!chatId || !message) {
+            alert('Заполните chatId и текст сообщения');
+            return;
+        }
+
+        const url = `${API_URL}/waInstance${creds.idInstance}/sendMessage/${creds.apiTokenInstance}`;
+        const payload = { chatId, message };
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            displayResponse(data);
+        } catch (err) {
+            displayResponse({ error: err.message });
+        }
+    }
+
+    async function sendFileByUrl() {
+        const creds = getCredentials();
+        if (!creds) return;
+
+        const chatId = document.getElementById('chatIdFile').value.trim();
+        const urlFile = document.getElementById('urlFile').value.trim();
+
+        if (!chatId || !urlFile) {
+            alert('Заполните chatId и ссылку на файл');
+            return;
+        }
+
+        let fileName = 'file'; 
+        try {
+            const parts = urlFile.split('/');
+            const lastPart = parts[parts.length - 1];
+            if (lastPart) fileName = lastPart;
+        } catch (e) {
+            console.error('Не удалось извлечь имя файла', e);
+        }
+        const url = `${API_URL}/waInstance${creds.idInstance}/sendFileByUrl/${creds.apiTokenInstance}`;
+        
+        const payload = { 
+            chatId, 
+            urlFile, 
+            fileName: fileName 
+        };
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            displayResponse(data);
+        } catch (err) {
+            displayResponse({ error: err.message });
+        }
+    }
+</script>
+
+</body>
+</html>
